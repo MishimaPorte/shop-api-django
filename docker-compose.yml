@@ -1,0 +1,36 @@
+version: "3.9"
+   
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: "apidb"
+      POSTGRES_USER: "apiuser"
+      POSTGRES_PASSWORD: "admin" 
+      POSTGRES_HOST_AUTH_METHOD: trust
+    restart: always
+    volumes:
+      - ./init.db/:/docker-entrypoint-initdb.d/
+    networks:
+      - djnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apiuser -d apidb"]
+      interval: "5s"
+      timeout: 5s
+      retries: 5
+  web:
+    build: 
+      dockerfile: ./Dockerfile
+    command: bash -c "python manage.py runserver 0.0.0.0:8080"
+    ports: 
+      - "8080:8080"
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy 
+
+    networks:
+      - djnet
+networks:
+  djnet:
+    driver: bridge
